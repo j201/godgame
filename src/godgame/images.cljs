@@ -3,18 +3,18 @@
 (def image-map (atom {}))
 
 (def image-names
-  ["arctic"
-   "deepocean"
-   "desert"
-   "forest"
-   "grassland"
-   "mountain"
-   "rainforest"
-   "savannah"
-   "selected"
-   "shallowocean"
-   "taiga"
-   "tundra"])
+  [:arctic
+   :deepocean
+   :desert
+   :forest
+   :grassland
+   :mountain
+   :rainforest
+   :savannah
+   :selected
+   :shallowocean
+   :taiga
+   :tundra])
 
 (defn name->path [name]
   (str "res/" name ".png"))

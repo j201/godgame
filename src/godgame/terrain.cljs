@@ -1,6 +1,20 @@
 (ns godgame.terrain
   (:require [godgame.utils :as utils]))
 
+(def tile-types
+  [:arctic
+   :deepocean
+   :desert
+   :forest
+   :grassland
+   :mountain
+   :rainforest
+   :savannah
+   :selected
+   :shallowocean
+   :taiga
+   :tundra])
+
 (defn borders? [[x1 y1] [x2 y2] w]
   (or (and (<= (.abs js/Math (- x1 x2)) 1)
            (<= (.abs js/Math (- y1 y2)) 1)
@@ -80,8 +94,15 @@
                       (recur (rest candidates) current-tiles to-recur-on))))
                 (reduce #(generate-land-mass %1 %2 (inc depth)) current-tiles to-recur-on))))))
 
+(defn rand-non-land-point [tiles]
+  (let [[w h] (w-h tiles)
+        p [(rand-int w) (rand-int h)]]
+    (if (:land (tile-at tiles p))
+      (rand-non-land-point tiles)
+      p)))
+
 (defn rand-terrain [w h]
   (loop [tiles (repeat w (repeat h nil))]
     (if (> (fraction-land tiles) 0.35)
       tiles
-      (recur (generate-land-mass tiles [(rand-int w) (rand-int h)] 0)))))
+      (recur (generate-land-mass tiles (rand-non-land-point tiles) 0)))))
