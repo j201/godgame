@@ -18,23 +18,23 @@
 ;; note: humidity <= temperature guaranteed
 (def tile-climates
   {:arctic {:humidity [0 0.1]
-            :temperature [0 0.1]}
+            :temperature [0 0.15]}
    :desert {:humidity [0 0.1]
-            :temperature [0.2 1]}
+            :temperature [0.4 1]}
    :forest {:humidity [0.4 0.8]
             :temperature [0.4 1]}
    :grassland {:humidity [0.25 0.4]
                :temperature [0.4 1]}
-   ; :mountain {:humidity [0 1]
-   ;            :temperature [0 1]}
    :rainforest {:humidity [0.8 1]
                 :temperature [0.8 1]}
    :savannah {:humidity [0.1 0.25]
               :temperature [0.4 1]}
-   :taiga {:humidity [0.1 0.4]
-           :temperature [0.2 0.4]}
+   :taiga {:humidity [0 0.4]
+           :temperature [0.25 0.4]}
    :tundra {:humidity [0 0.2]
-            :temperature [0.1 0.2]}})
+            :temperature [0.15 0.25]}})
+
+(def dirs #{[-1 -1] [-1 0] [-1 1] [0 -1] [0 1] [1 -1] [1 0] [1 1]})
 
 (defn borders? [[x1 y1] [x2 y2] w]
   (and (<= (.abs js/Math (- x1 x2)) 1)
@@ -65,7 +65,7 @@
           (filter #(coord-exists? % w h)
                   (map #(wrap % w)
                        (map #(map + coord %)
-                            [[-1 -1] [-1 0] [-1 1] [0 -1] [0 1] [1 -1] [1 0] [1 1]])))))
+                            dirs)))))
 
 (defn tiles-around [tiles coord]
   (let [[w h] (w-h tiles)]
@@ -131,11 +131,16 @@
   (and (>= x l)
        (<= x u)))
 
+(defn humidity-bias [x]
+  (- 1 (.sin js/Math (* (.-PI js/Math)
+                        (- 1 (.sqrt js/Math (- 1 x)))))))
+
 (defn gen-humidity [tiles coord temperature]
   (* temperature
-     (if (every? :land (tiles-around tiles coord))
-       (* 0.5 (rand))
-       (+ 0.5 (* 0.5 (rand))))))
+     (+ (* 0.5 (humidity-bias temperature))
+       (* 0.5 (if (every? :land (tiles-around tiles coord))
+                (* 0.5 (rand))
+                (+ 0.5 (* 0.5 (rand))))))))
 
 (defn gen-temperature [tiles [x y]]
   (let [[w h] (w-h tiles)]
@@ -163,14 +168,35 @@
            (gen-tile-climate (gen-humidity tiles coord temperature)
                              temperature))))
 
+(defn add-mountain-range [tiles]
+  (let [[w h] (w-h tiles)
+        start-coord [(rand-int w) (rand-int h)]]
+    (if (not (:land (tile-at tiles start-coord)))
+      (add-mountain-range tiles)
+      (reduce (fn [tiles coord]
+                (let [tile (tile-at tiles coord)]
+                  (if (:land tile)
+                    (assoc-tiles tiles coord
+                                 (assoc tile :type :mountain))
+                    tiles)))
+              tiles
+              (take (+ 3 (rand-int 6))
+                    (iterate #(rand-nth (vec (points-around % w h)))
+                             start-coord))))))
+
+(defn add-mountains [tiles]
+  (nth (iterate add-mountain-range tiles)
+       (+ 2 (rand-int 4))))
+
 (defn assign-types [tiles]
-  (for [x (range (count tiles))]
-    (for [y (range (count (first tiles)))
-          :let [coord [x y]
-                tile (tile-at tiles coord)]]
-      (if (:land tile)
-        (assign-land-type tiles coord)
-        (assign-ocean-type tiles coord)))))
+  (add-mountains
+    (for [x (range (count tiles))]
+      (for [y (range (count (first tiles)))
+            :let [coord [x y]
+                  tile (tile-at tiles coord)]]
+        (if (:land tile)
+          (assign-land-type tiles coord)
+          (assign-ocean-type tiles coord))))))
 
 (defn rand-terrain [w h]
   (assign-types (loop [tiles (repeat w (repeat h nil))]
