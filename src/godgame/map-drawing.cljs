@@ -1,6 +1,7 @@
 (ns godgame.map-drawing
   (:require [godgame.images :as images]
-            [godgame.utils :as utils]))
+            [godgame.utils :as utils]
+            [godgame.tiles :refer [tile-at]]))
 
 (def hex-side 9)
 
@@ -21,9 +22,6 @@
   (let [[cx cy] (hex-centre coord)]
     [(- cx (/ hex-width 2))
      (- cy hex-side)]))
-
-(defn tile-at [tiles [x y]]
-  (nth (nth tiles x) y))
 
 (defn draw-map! [tiles ctx offset]
   (doseq [x (range (count tiles))

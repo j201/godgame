@@ -1,19 +1,6 @@
 (ns godgame.terrain
-  (:require [godgame.utils :as utils]))
-
-(def tile-types
-  [:arctic
-   :deepocean
-   :desert
-   :forest
-   :grassland
-   :mountain
-   :rainforest
-   :savannah
-   :selected
-   :shallowocean
-   :taiga
-   :tundra])
+  (:require [godgame.utils :as utils]
+            [godgame.tiles :as tiles :refer [w-h tile-at assoc-tiles tiles-around]]))
 
 ;; note: humidity <= temperature guaranteed
 (def tile-climates
@@ -34,43 +21,7 @@
    :tundra {:humidity [0 0.2]
             :temperature [0.15 0.25]}})
 
-(def dirs #{[-1 -1] [-1 0] [-1 1] [0 -1] [0 1] [1 -1] [1 0] [1 1]})
-
-(defn borders? [[x1 y1] [x2 y2] w]
-  (and (<= (.abs js/Math (- x1 x2)) 1)
-       (<= (.abs js/Math (- y1 y2)) 1)
-       (let [not-bordering (fn [x1 y1 x2 y2]
-                             (if (even? y1)
-                               (and (= x2 (inc x1))
-                                    (not= y1 y2))
-                               (and (= x2 (dec x1))
-                                    (not= y1 y2))))]
-         (not (or (not-bordering x1 y1 x2 y2)
-                  (not-bordering x2 y2 x1 y1))))))
-
-(defn coord-exists? [[x y] w h]
-  (and (>= x 0) (< x w)
-       (>= y 0) (< y h)))
-
-(defn wrap [[x y] w]
-  [(mod x w) y])
-
 (def cohesiveness 0.11)
-
-(defn w-h [tiles]
-  [(count tiles) (count (first tiles))])
-
-(defn points-around [coord w h]
-  (filter #(borders? coord % w)
-          (filter #(coord-exists? % w h)
-                  (map #(wrap % w)
-                       (map #(map + coord %)
-                            dirs)))))
-
-(defn tiles-around [tiles coord]
-  (let [[w h] (w-h tiles)]
-    (map (fn [[x y]] (nth (nth tiles x) y))
-       (points-around coord w h))))
 
 (defn add-land-at? [tiles coord depth]
   (if (< depth 4)
@@ -82,14 +33,6 @@
 (defn land [tiles [x y]]
   {:land true})
 
-(defn assoc-tiles [tiles [x y] v]
-  (assoc (vec tiles) x
-         (assoc (vec (nth tiles x))
-                y v)))
-
-(defn tile-at [tiles [x y]]
-  (nth (nth tiles x) y))
-
 (defn fraction-land [tiles]
   (/ (reduce + (map #(count (filter :land %))
                     tiles))
@@ -98,9 +41,9 @@
 (defn generate-land-mass [tiles coord depth]
   (let [[w h] (w-h tiles)]
     (cond
-      (not (coord-exists? coord w h)) tiles
+      (not (tiles/coord-exists? coord w h)) tiles
       (not (:land (tile-at tiles coord))) (recur (assoc-tiles tiles coord (land tiles coord)) coord depth)
-      :else (loop [candidates (points-around coord w h)
+      :else (loop [candidates (tiles/points-around coord w h)
                    current-tiles tiles
                    to-recur-on []]
               (if (seq candidates)
@@ -181,7 +124,7 @@
                     tiles)))
               tiles
               (take (+ 3 (rand-int 6))
-                    (iterate #(rand-nth (vec (points-around % w h)))
+                    (iterate #(rand-nth (vec (tiles/points-around % w h)))
                              start-coord))))))
 
 (defn add-mountains [tiles]
