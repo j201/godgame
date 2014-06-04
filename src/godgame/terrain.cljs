@@ -15,18 +15,38 @@
    :taiga
    :tundra])
 
+;; note: humidity <= temperature guaranteed
+(def tile-climates
+  {:arctic {:humidity [0 0.1]
+            :temperature [0 0.1]}
+   :desert {:humidity [0 0.1]
+            :temperature [0.2 1]}
+   :forest {:humidity [0.4 0.8]
+            :temperature [0.4 1]}
+   :grassland {:humidity [0.25 0.4]
+               :temperature [0.4 1]}
+   ; :mountain {:humidity [0 1]
+   ;            :temperature [0 1]}
+   :rainforest {:humidity [0.8 1]
+                :temperature [0.8 1]}
+   :savannah {:humidity [0.1 0.25]
+              :temperature [0.4 1]}
+   :taiga {:humidity [0.1 0.4]
+           :temperature [0.2 0.4]}
+   :tundra {:humidity [0 0.2]
+            :temperature [0.1 0.2]}})
+
 (defn borders? [[x1 y1] [x2 y2] w]
-  (or (and (<= (.abs js/Math (- x1 x2)) 1)
-           (<= (.abs js/Math (- y1 y2)) 1)
-           (let [not-bordering (fn [xe ye xo yo]
-                                 (and (even? xe)
-                                      (= (inc ye) yo)))]
-             (not (or (not-bordering x1 y1 x2 y2)
-                      (not-bordering x2 y2 x1 y1)))))
-      (cond
-        (= x1 (dec w)) (borders? [-1 y1] [x2 y2])
-        (= x2 (dec w)) (borders? [x1 y1] [-1 y2])
-        :else false)))
+  (and (<= (.abs js/Math (- x1 x2)) 1)
+       (<= (.abs js/Math (- y1 y2)) 1)
+       (let [not-bordering (fn [x1 y1 x2 y2]
+                             (if (even? y1)
+                               (and (= x2 (inc x1))
+                                    (not= y1 y2))
+                               (and (= x2 (dec x1))
+                                    (not= y1 y2))))]
+         (not (or (not-bordering x1 y1 x2 y2)
+                  (not-bordering x2 y2 x1 y1))))))
 
 (defn coord-exists? [[x y] w h]
   (and (>= x 0) (< x w)
@@ -60,7 +80,7 @@
        0.9)))
 
 (defn land [tiles [x y]]
-  {:land true}) ;; TODO: heat, humidity, etc.
+  {:land true})
 
 (defn assoc-tiles [tiles [x y] v]
   (assoc (vec tiles) x
@@ -101,8 +121,59 @@
       (rand-non-land-point tiles)
       p)))
 
+(defn latitude
+  "from 0 to 1"
+  [h y]
+  (/ (.abs js/Math (- y (/ h 2)))
+     (/ h 2)))
+
+(defn in-range? [x [l u]]
+  (and (>= x l)
+       (<= x u)))
+
+(defn gen-humidity [tiles coord temperature]
+  (* temperature
+     (if (every? :land (tiles-around tiles coord))
+       (* 0.5 (rand))
+       (+ 0.5 (* 0.5 (rand))))))
+
+(defn gen-temperature [tiles [x y]]
+  (let [[w h] (w-h tiles)]
+    (min 1
+         (max 0
+              (+ (* 0.15 (rand))
+                 (- 1 (latitude h y)))))))
+
+(defn gen-tile-climate [humidity temperature]
+  (ffirst
+    (filter #(and (in-range? humidity (:humidity (second %)))
+                  (in-range? temperature (:temperature (second %))))
+            (for [[k v] tile-climates]
+              [k v]))))
+
+(defn assign-ocean-type [tiles coord]
+  (assoc (tile-at tiles coord) :type
+         (if (some :land (tiles-around tiles coord))
+           :shallowocean
+           :deepocean)))
+
+(defn assign-land-type [tiles coord]
+  (assoc (tile-at tiles coord) :type
+         (let [temperature (gen-temperature tiles coord)]
+           (gen-tile-climate (gen-humidity tiles coord temperature)
+                             temperature))))
+
+(defn assign-types [tiles]
+  (for [x (range (count tiles))]
+    (for [y (range (count (first tiles)))
+          :let [coord [x y]
+                tile (tile-at tiles coord)]]
+      (if (:land tile)
+        (assign-land-type tiles coord)
+        (assign-ocean-type tiles coord)))))
+
 (defn rand-terrain [w h]
-  (loop [tiles (repeat w (repeat h nil))]
-    (if (> (fraction-land tiles) 0.35)
-      tiles
-      (recur (generate-land-mass tiles (rand-non-land-point tiles) 0)))))
+  (assign-types (loop [tiles (repeat w (repeat h nil))]
+                  (if (> (fraction-land tiles) 0.35)
+                    tiles
+                    (recur (generate-land-mass tiles (rand-non-land-point tiles) 0))))))

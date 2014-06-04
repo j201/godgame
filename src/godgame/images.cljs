@@ -1,4 +1,5 @@
-(ns godgame.images)
+(ns godgame.images
+  (:require [godgame.utils :as utils]))
 
 (def image-map (atom {}))
 
@@ -16,10 +17,9 @@
    :taiga
    :tundra])
 
-(defn name->path [name]
-  (str "res/" name ".png"))
+(defn name->path [s]
+  (str "res/" (name s) ".png"))
 
-;; untested
 (defn load! [callback]
   (let [images-loaded (atom 0)]
     (reset! image-map
@@ -27,10 +27,10 @@
                       (assoc image-map image-name
                              (let [image-obj (.createElement js/document "img")]
                                (do
-                                 (set! (.-src image-obj) (name->path name))
+                                 (set! (.-src image-obj) (name->path image-name))
                                  (set! (.-onload image-obj)
                                        (fn []
-                                         (if (= @images-loaded (count image-names))
+                                         (if (= @images-loaded (dec (count image-names)))
                                            (callback)
                                            (swap! images-loaded inc))))
                                  image-obj))))
