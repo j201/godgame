@@ -80,10 +80,10 @@
 
 (defn gen-humidity [tiles coord temperature]
   (* temperature
-     (+ (* 0.5 (humidity-bias temperature))
-       (* 0.5 (if (every? :land (tiles-around tiles coord))
-                (* 0.5 (rand))
-                (+ 0.5 (* 0.5 (rand))))))))
+     (+ (* 0.7 (humidity-bias temperature))
+       (* 0.3 (if (every? :land (tiles-around tiles coord))
+                (* 0.7 (rand))
+                (+ 0.3 (* 0.7 (rand))))))))
 
 (defn gen-temperature [tiles [x y]]
   (let [[w h] (w-h tiles)]
