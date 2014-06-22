@@ -42,6 +42,7 @@
              (redraw!))
         39 (do
              (swap! x-offset #(+ % scroll-speed))
-             (redraw!))))))
+             (redraw!))
+        nil))))
 
 ; (visualize-tiles! (terrain/rand-terrain 100 30))
