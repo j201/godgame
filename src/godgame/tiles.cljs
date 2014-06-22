@@ -1,5 +1,3 @@
-;; TODO: fix points-around/border wrapping
-
 (ns godgame.tiles)
 
 (defn borders? [[x1 y1] [x2 y2] w]

@@ -10,16 +10,6 @@
       (set! (.-textContent div) text)
       div)))
 
-(defn visualize-tiles! [tiles]
-  (.appendChild (.-body js/document)
-                (into-div
-                  (clojure.string/join "\n"
-                                       (map (fn [arr]
-                                              (apply str
-                                                     (map #(if (:land %) "#" " ")
-                                                          arr)))
-                                            (apply map list tiles))))))
-
 (def main-canvas 
   (.querySelector js/document "canvas"))
 
@@ -29,18 +19,17 @@
 (def main-ctx
   (.getContext main-canvas "2d"))
 
-(def generated-terrain (terrain/rand-terrain 30 30))
+(def generated-terrain (terrain/rand-terrain 70 30))
 
 (def x-offset (atom 0))
 
 (defn redraw! []
   (.clearRect main-ctx 0 0 canvas-w canvas-h)
-  (map-drawing/draw-map! generated-terrain
-                         main-ctx
-                         [@x-offset 0]
-                         canvas-w))
+  (map-drawing/draw-map! generated-terrain main-ctx [@x-offset 0] canvas-w false))
 
 (images/load! redraw!)
+
+(def scroll-speed 10)
 
 (.addEventListener
   js/window
@@ -49,10 +38,10 @@
     (let [key-code (or (.-which e) (.-keyCode e))]
       (case key-code
         37 (do
-             (swap! x-offset dec)
+             (swap! x-offset #(- % scroll-speed))
              (redraw!))
         39 (do
-             (swap! x-offset inc)
+             (swap! x-offset #(+ % scroll-speed))
              (redraw!))))))
 
 ; (visualize-tiles! (terrain/rand-terrain 100 30))
