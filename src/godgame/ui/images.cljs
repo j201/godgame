@@ -1,4 +1,4 @@
-(ns godgame.images
+(ns godgame.ui.images
   (:require [godgame.utils :as utils]))
 
 (def image-map (atom {}))

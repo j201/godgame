@@ -1,4 +1,4 @@
-(ns godgame.ui-utils)
+(ns godgame.ui.utils)
 
 (def hex-side 9)
 

@@ -1,8 +1,8 @@
-(ns godgame.map-drawing
-  (:require [godgame.images :as images]
+(ns godgame.ui.map-drawing
+  (:require [godgame.ui.images :as images]
             [godgame.utils :as utils]
             [godgame.tiles :refer [tile-at]]
-            [godgame.ui-utils :refer [hex-side hex-width hex-top-left hex-centre]]))
+            [godgame.ui.utils :refer [hex-side hex-width hex-top-left hex-centre]]))
 
 (defn set-canvas-w-h! [canvas w h]
   (set! (.-width canvas) w)

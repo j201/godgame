@@ -1,7 +1,7 @@
 (ns godgame.core
   (:require [godgame.utils :as utils]
-            [godgame.map-drawing :as map-drawing]
-            [godgame.images :as images]
+            [godgame.ui.map-drawing :as map-drawing]
+            [godgame.ui.images :as images]
             [godgame.terrain :as terrain]))
 
 (defn into-div [text]
